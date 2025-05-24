@@ -1,8 +1,8 @@
 // נקודת כניסה לזריעת בסיס הנתונים - Database Seeding Entry Point
 // Academic Program Matching Platform
 
-const { PrismaClient } = require('../../src/generated/prisma');
-const { institutionsData, facultiesData, programsData, requirementsData } = require('./universities-data');
+import { PrismaClient, ProgramType, DegreeLevel, RequirementType } from '@prisma/client';
+import { institutionsData, facultiesData, programsData, requirementsData } from './universities-data';
 
 const prisma = new PrismaClient();
 
@@ -36,7 +36,7 @@ async function main() {
 
     // Seed institutions
     console.log('🏛️ Seeding institutions...');
-    const createdInstitutions = [];
+    const institutionIdMap = new Map<string, string>(); // Map original ID to generated ID
     for (const institutionData of institutionsData) {
       const institution = await prisma.institution.create({
         data: {
@@ -49,13 +49,13 @@ async function main() {
           establishedYear: institutionData.establishedYear
         }
       });
-      createdInstitutions.push(institution);
+      institutionIdMap.set(institutionData.id, institution.id);
     }
-    console.log(`✅ Created ${createdInstitutions.length} institutions`);
+    console.log(`✅ Created ${institutionIdMap.size} institutions`);
 
     // Seed faculties
     console.log('🏫 Seeding faculties...');
-    const createdFaculties = [];
+    const facultyIdMap = new Map<string, string>(); // Map original ID to generated ID
     for (const facultyData of facultiesData) {
       const faculty = await prisma.faculty.create({
         data: {
@@ -63,34 +63,34 @@ async function main() {
           nameEnglish: facultyData.nameEnglish,
           description: facultyData.description,
           website: facultyData.website,
-          institutionId: facultyData.institutionId
+          institutionId: institutionIdMap.get(facultyData.institutionId)!
         }
       });
-      createdFaculties.push(faculty);
+      facultyIdMap.set(facultyData.id, faculty.id);
     }
-    console.log(`✅ Created ${createdFaculties.length} faculties`);
+    console.log(`✅ Created ${facultyIdMap.size} faculties`);
 
     // Seed programs
     console.log('📚 Seeding academic programs...');
-    const createdPrograms = [];
+    const programIdMap = new Map<string, string>(); // Map original ID to generated ID
     for (const programData of programsData) {
       const program = await prisma.program.create({
         data: {
           nameHebrew: programData.nameHebrew,
           nameEnglish: programData.nameEnglish,
-          type: programData.type,
-          degreeLevel: programData.degreeLevel,
+          type: programData.type as ProgramType,
+          degreeLevel: programData.degreeLevel as DegreeLevel,
           description: programData.description,
           duration: programData.duration,
           website: programData.website,
           isActive: programData.isActive,
-          institutionId: programData.institutionId,
-          facultyId: programData.facultyId
+          institutionId: institutionIdMap.get(programData.institutionId)!,
+          facultyId: facultyIdMap.get(programData.facultyId)!
         }
       });
-      createdPrograms.push(program);
+      programIdMap.set(programData.id, program.id);
     }
-    console.log(`✅ Created ${createdPrograms.length} academic programs`);
+    console.log(`✅ Created ${programIdMap.size} academic programs`);
 
     // Seed requirements
     console.log('📋 Seeding admission requirements...');
@@ -98,7 +98,7 @@ async function main() {
     for (const requirementData of requirementsData) {
       const requirement = await prisma.programRequirement.create({
         data: {
-          type: requirementData.type,
+          type: requirementData.type as RequirementType,
           subjectName: requirementData.subjectName || null,
           minScore: requirementData.minScore || null,
           maxScore: requirementData.maxScore || null,
@@ -106,7 +106,7 @@ async function main() {
           description: requirementData.description || null,
           isRequired: requirementData.isRequired,
           weight: requirementData.weight || null,
-          programId: requirementData.programId
+          programId: programIdMap.get(requirementData.programId)!
         }
       });
       createdRequirements.push(requirement);
@@ -197,9 +197,9 @@ async function main() {
     // Summary
     console.log('\n🎉 Database seeding completed successfully!');
     console.log('📊 Summary:');
-    console.log(`   • ${createdInstitutions.length} institutions (מוסדות אקדמיים)`);
-    console.log(`   • ${createdFaculties.length} faculties (פקולטטות)`);
-    console.log(`   • ${createdPrograms.length} academic programs (תוכניות לימודים)`);
+    console.log(`   • ${institutionIdMap.size} institutions (מוסדות אקדמיים)`);
+    console.log(`   • ${facultyIdMap.size} faculties (פקולטטות)`);
+    console.log(`   • ${programIdMap.size} academic programs (תוכניות לימודים)`);
     console.log(`   • ${createdRequirements.length} admission requirements (דרישות קבלה)`);
     console.log(`   • 2 test users with profiles (משתמשי בדיקה)`);
     
@@ -220,4 +220,4 @@ main()
   .catch((e) => {
     console.error('❌ Seeding failed:', e);
     process.exit(1);
-  }); 
+  });
