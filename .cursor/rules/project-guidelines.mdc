@@ -1,0 +1,125 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# PROJECT GUIDELINES
+
+## 🔄 Git Workflow Requirements
+
+- **Commit on Every New File**: Any new file creation requires immediate git commit with descriptive message
+- **Commit on Significant Changes**: Major modifications to existing files require commits
+- **Push When Possible**: If remote repository is configured, push commits immediately
+- **Commit Messages**: Always in English, descriptive, following conventional commits format
+- **Code and Comments**: All code, filenames, variables, and comments in English
+- **File Structure**: Follow English naming conventions for all files and directories
+
+## 🇮🇱 Hebrew Language Requirements
+
+### User-Facing Text
+- **ALL user-visible text must be in Hebrew**
+- **Page titles, headings, buttons, form labels**: Hebrew only
+- **Error messages, success messages, notifications**: Hebrew only
+- **Navigation menus, tooltips, help text**: Hebrew only
+- **Landing page content, onboarding steps**: Hebrew only
+
+### RTL Layout Support
+- **Direction**: `dir="rtl"` on HTML root elements
+- **Text Alignment**: Default right-aligned for Hebrew text
+- **Layout Mirroring**: Icons, buttons, and navigation elements mirrored for RTL
+- **Tailwind RTL**: Use `rtl:` prefix for RTL-specific styles
+
+### What Stays in English
+- ✅ **Code**: Variables, functions, classes, APIs
+- ✅ **Comments**: All code comments and documentation
+- ✅ **File Names**: All files and directories
+- ✅ **Git Messages**: Commit messages and branch names
+- ✅ **Technical Documentation**: Architecture docs, README files
+- ✅ **Database**: Table names, column names, constraints
+
+## 📝 Implementation Examples
+
+### Hebrew Text in Components
+```jsx
+// ✅ DO: Hebrew user-facing text
+<button className="bg-blue-600 text-white">
+  התחל את המסע שלך ←
+</button>
+
+<h1 className="text-4xl font-bold">
+  מצא את המסלול האקדמי המושלם
+</h1>
+
+// ❌ DON'T: English user-facing text
+<button className="bg-blue-600 text-white">
+  Start Your Journey →
+</button>
+```
+
+### RTL Layout Support
+```jsx
+// ✅ DO: RTL-aware layout
+<div className="text-right rtl:text-right ltr:text-left">
+  <h2 className="text-2xl mb-4">כותרת בעברית</h2>
+  <p className="text-gray-600">תוכן בעברית עם יישור נכון</p>
+</div>
+
+// ✅ DO: Mirrored icons for RTL
+<ArrowLeftIcon className="w-5 h-5 rtl:rotate-180" />
+```
+
+### Form Labels and Validation
+```jsx
+// ✅ DO: Hebrew form elements
+<label htmlFor="psychometric" className="block text-sm font-medium text-gray-700">
+  ציון פסיכומטרי
+</label>
+<input
+  type="number"
+  id="psychometric"
+  placeholder="הכנס ציון (200-800)"
+  className="w-full px-4 py-2 border rounded-lg"
+/>
+
+// Error messages in Hebrew
+{errors.psychometric && (
+  <p className="text-red-500 text-sm mt-1">
+    נא להכניס ציון פסיכומטרי תקין
+  </p>
+)}
+```
+
+## 🎨 Style Guide Updates for Hebrew
+
+### Typography
+- **Primary Font**: `'Heebo', 'Assistant', 'Rubik', system-ui, sans-serif` for Hebrew
+- **English Fallback**: `Inter, system-ui, sans-serif` for technical text
+- **Line Height**: Increased for Hebrew text readability (`leading-relaxed`)
+
+### Spacing for Hebrew
+- **Letter Spacing**: Standard for Hebrew (no extra spacing)
+- **Word Spacing**: Default browser spacing for Hebrew
+- **Paragraph Spacing**: Extra spacing between Hebrew paragraphs
+
+### Component Modifications
+- **Buttons**: Text alignment and padding adjusted for Hebrew
+- **Cards**: Header alignment and content flow for RTL
+- **Forms**: Label placement and validation message positioning
+
+## 📋 Commit Workflow
+
+1. **Create/Modify Files**: Make necessary changes
+2. **Test Locally**: Ensure Hebrew text displays correctly
+3. **Stage Changes**: `git add <files>`
+4. **Commit**: `git commit -m "feat/fix: descriptive English message"`
+5. **Push** (if remote configured): `git push origin main`
+
+## 🔍 Quality Checklist
+
+Before any commit, verify:
+- [ ] All user-facing text is in Hebrew
+- [ ] RTL layout works correctly
+- [ ] Hebrew fonts load properly
+- [ ] No English text visible to users
+- [ ] Code and comments remain in English
+- [ ] File names and structure in English
