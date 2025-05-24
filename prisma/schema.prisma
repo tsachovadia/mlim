@@ -1,0 +1,272 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+// פלטפורמת התאמת תוכניות אקדמיות - Academic Program Matching Platform
+// Database Schema for Israeli Universities CS & Psychology Programs
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// מוסדות לימודים - Educational Institutions
+model Institution {
+  id            String    @id @default(cuid())
+  nameHebrew    String    @map("name_hebrew")
+  nameEnglish   String    @map("name_english")
+  city          String
+  website       String?
+  logoUrl       String?   @map("logo_url")
+  description   String?   @db.Text
+  establishedYear Int?    @map("established_year")
+  
+  // קשרים
+  faculties     Faculty[]
+  programs      Program[]
+  
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@map("institutions")
+}
+
+// פקולטטות - Faculties
+model Faculty {
+  id              String      @id @default(cuid())
+  nameHebrew      String      @map("name_hebrew")
+  nameEnglish     String      @map("name_english")
+  description     String?     @db.Text
+  website         String?
+  
+  // קשרים
+  institutionId   String      @map("institution_id")
+  institution     Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  programs        Program[]
+  
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  @@map("faculties")
+}
+
+// סוגי תוכניות לימודים - Program Types
+enum ProgramType {
+  COMPUTER_SCIENCE
+  PSYCHOLOGY
+  COMBINED_CS_PSYCHOLOGY
+  DATA_SCIENCE
+  COGNITIVE_SCIENCE
+  
+  @@map("program_type")
+}
+
+// רמות תואר - Degree Levels
+enum DegreeLevel {
+  BACHELOR
+  MASTER
+  PHD
+  
+  @@map("degree_level")
+}
+
+// תוכניות לימודים - Academic Programs
+model Program {
+  id                String      @id @default(cuid())
+  nameHebrew        String      @map("name_hebrew")
+  nameEnglish       String      @map("name_english")
+  type              ProgramType
+  degreeLevel       DegreeLevel @map("degree_level")
+  description       String?     @db.Text
+  duration          Int         // בשנים
+  website           String?
+  isActive          Boolean     @default(true) @map("is_active")
+  
+  // מידע על הפקולטה והמוסד
+  institutionId     String      @map("institution_id")
+  institution       Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  facultyId         String      @map("faculty_id")
+  faculty           Faculty     @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+  
+  // דרישות קבלה
+  requirements      ProgramRequirement[]
+  
+  // התאמות של משתמשים
+  matches           ProgramMatch[]
+  
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+
+  @@map("programs")
+}
+
+// סוגי דרישות - Requirement Types
+enum RequirementType {
+  PSYCHOMETRIC_SCORE
+  BAGRUT_AVERAGE
+  BAGRUT_SUBJECT
+  ENGLISH_LEVEL
+  MATHEMATICS_LEVEL
+  PORTFOLIO
+  INTERVIEW
+  ADDITIONAL_EXAM
+  
+  @@map("requirement_type")
+}
+
+// דרישות קבלה לתוכניות - Program Requirements
+model ProgramRequirement {
+  id            String          @id @default(cuid())
+  type          RequirementType
+  subjectName   String?         @map("subject_name") // למקצועות בגרות ספציפיים
+  minScore      Float?          @map("min_score")
+  maxScore      Float?          @map("max_score")
+  requiredLevel String?         @map("required_level") // לאנגלית/מתמטיקה
+  description   String?         @db.Text
+  isRequired    Boolean         @default(true) @map("is_required")
+  weight        Float?          // משקל בחישוב ההתאמה
+  
+  // קשר לתוכנית
+  programId     String          @map("program_id")
+  program       Program         @relation(fields: [programId], references: [id], onDelete: Cascade)
+  
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  @@map("program_requirements")
+}
+
+// משתמשים - Users
+model User {
+  id            String      @id @default(cuid())
+  email         String      @unique
+  firstName     String      @map("first_name")
+  lastName      String      @map("last_name")
+  birthYear     Int?        @map("birth_year")
+  city          String?
+  phone         String?
+  
+  // פרופיל אקדמי
+  academicProfile AcademicProfile?
+  
+  // התאמות תוכניות
+  programMatches ProgramMatch[]
+  
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+// פרופיל אקדמי של המשתמש - User Academic Profile
+model AcademicProfile {
+  id                    String             @id @default(cuid())
+  userId                String             @unique @map("user_id")
+  user                  User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // ציוני פסיכומטרי
+  psychometricScore     Int?               @map("psychometric_score")
+  psychometricYear      Int?               @map("psychometric_year")
+  
+  // ממוצע בגרות
+  bagrutAverage         Float?             @map("bagrut_average")
+  bagrutYear            Int?               @map("bagrut_year")
+  
+  // רמות אנגלית ומתמטיקה
+  englishLevel          String?            @map("english_level") // 3,4,5 יחידות או רמות אחרות
+  mathLevel             String?            @map("math_level")    // 3,4,5 יחידות
+  
+  // ציוני מקצועות בגרות
+  bagrutSubjects        BagrutSubject[]
+  
+  // העדפות
+  preferences           UserPreference[]
+  
+  createdAt             DateTime           @default(now()) @map("created_at")
+  updatedAt             DateTime           @updatedAt @map("updated_at")
+
+  @@map("academic_profiles")
+}
+
+// ציוני מקצועות בגרות - Bagrut Subject Scores
+model BagrutSubject {
+  id                String          @id @default(cuid())
+  profileId         String          @map("profile_id")
+  profile           AcademicProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  
+  subjectName       String          @map("subject_name")
+  score             Int
+  units             Int             // מספר יחידות לימוד
+  
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+
+  @@map("bagrut_subjects")
+}
+
+// העדפות משתמש - User Preferences
+model UserPreference {
+  id                String          @id @default(cuid())
+  profileId         String          @map("profile_id")
+  profile           AcademicProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  
+  preferredCity     String?         @map("preferred_city")
+  maxDistance       Int?            @map("max_distance") // במידת קילומטרים
+  programType       ProgramType?    @map("program_type")
+  degreeLevel       DegreeLevel?    @map("degree_level")
+  
+  // עדיפויות נוספות
+  languagePreference String?        @map("language_preference") // עברית/אנגלית
+  campusSize        String?         @map("campus_size") // גדול/בינוני/קטן
+  
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+
+  @@map("user_preferences")
+}
+
+// רמות ביטחון להתאמה - Confidence Levels
+enum ConfidenceLevel {
+  HIGH_CHANCE       // סיכוי גבוה (85-100%)
+  GOOD_FIT         // התאמה טובה (70-84%)
+  POTENTIAL_MATCH  // התאמה פוטנציאלית (50-69%)
+  LOW_CHANCE       // סיכוי נמוך (0-49%)
+  
+  @@map("confidence_level")
+}
+
+// התאמות תוכניות למשתמשים - Program Matches
+model ProgramMatch {
+  id                String          @id @default(cuid())
+  userId            String          @map("user_id")
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  programId         String          @map("program_id")
+  program           Program         @relation(fields: [programId], references: [id], onDelete: Cascade)
+  
+  // תוצאות ההתאמה
+  overallScore      Float           @map("overall_score") // ציון כולל 0-100
+  confidenceLevel   ConfidenceLevel @map("confidence_level")
+  
+  // פירוט הציונים
+  psychometricScore Float?          @map("psychometric_subscore")
+  bagrutScore       Float?          @map("bagrut_subscore")
+  subjectScore      Float?          @map("subject_subscore")
+  preferenceScore   Float?          @map("preference_subscore")
+  
+  // דרישות חסרות
+  missingRequirements String?       @map("missing_requirements") @db.Text
+  recommendations   String?         @db.Text
+  
+  // מתי בוצעה ההתאמה
+  calculatedAt      DateTime        @map("calculated_at")
+  
+  @@unique([userId, programId])
+  @@map("program_matches")
+}
