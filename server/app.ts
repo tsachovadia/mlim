@@ -5,6 +5,7 @@ import express, { Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import institutionsRouter from './routes/institutions';
+import programsRouter from './routes/programs';
 
 const app: Application = express();
 
@@ -29,21 +30,21 @@ app.get('/health', (req, res) => {
 // API Documentation
 app.get('/api/v1', (req, res) => {
   res.json({
-    name: 'פלטפורמת התאמת תוכניות אקדמיות - Academic Program Matching Platform',
+    name: 'פלטפורמת התאמת תוכניות אקדמיות',
+    nameEn: 'Academic Program Matching Platform',
     version: '1.0.0',
-    description: 'API לחיפוש והתאמת תוכניות לימודים באוניברסיטאות ישראליות',
-    descriptionEn: 'API for searching and matching academic programs in Israeli universities',
+    description: 'API for matching Israeli university programs',
     endpoints: {
       institutions: '/api/v1/institutions',
       programs: '/api/v1/programs',
-      users: '/api/v1/users',
-      matching: '/api/v1/matching'
+      health: '/health'
     }
   });
 });
 
 // API Routes
 app.use('/api/v1/institutions', institutionsRouter);
+app.use('/api/v1/programs', programsRouter);
 
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {

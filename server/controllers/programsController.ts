@@ -7,7 +7,7 @@ import { PrismaClient, ProgramType, DegreeLevel } from '@prisma/client';
 const prisma = new PrismaClient();
 
 // קבלת כל התוכניות - Get all programs
-export const getAllPrograms = async (req: Request, res: Response) => {
+export const getAllPrograms = async (req: Request, res: Response): Promise<void> => {
   try {
     const { 
       type, 
@@ -25,9 +25,12 @@ export const getAllPrograms = async (req: Request, res: Response) => {
     if (institutionId) whereClause.institutionId = institutionId as string;
     if (city) {
       whereClause.institution = {
-        city: { contains: city as string, mode: 'insensitive' }
+        city: { contains: city as string }
       };
     }
+
+    const limitInt = parseInt(limit as string);
+    const offsetInt = parseInt(offset as string);
 
     const programs = await prisma.program.findMany({
       where: whereClause,
@@ -59,8 +62,13 @@ export const getAllPrograms = async (req: Request, res: Response) => {
         { institution: { nameHebrew: 'asc' } },
         { nameHebrew: 'asc' }
       ],
-      take: parseInt(limit as string),
-      skip: parseInt(offset as string)
+      take: limitInt,
+      skip: offsetInt
+    });
+
+    // Get total count for pagination
+    const totalCount = await prisma.program.count({
+      where: whereClause
     });
 
     res.json({
@@ -70,9 +78,9 @@ export const getAllPrograms = async (req: Request, res: Response) => {
       data: programs,
       count: programs.length,
       pagination: {
-        limit: parseInt(limit as string),
-        offset: parseInt(offset as string),
-        hasMore: programs.length === parseInt(limit as string)
+        limit: limitInt,
+        offset: offsetInt,
+        hasMore: offsetInt + programs.length < totalCount
       }
     });
   } catch (error) {
@@ -87,7 +95,7 @@ export const getAllPrograms = async (req: Request, res: Response) => {
 };
 
 // קבלת תוכנית לפי ID - Get program by ID
-export const getProgramById = async (req: Request, res: Response) => {
+export const getProgramById = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     
@@ -125,11 +133,12 @@ export const getProgramById = async (req: Request, res: Response) => {
     });
 
     if (!program) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         error: 'תוכנית לא נמצאה',
         errorEn: 'Program not found'
       });
+      return;
     }
 
     res.json({
@@ -150,7 +159,7 @@ export const getProgramById = async (req: Request, res: Response) => {
 };
 
 // חיפוש תוכניות - Search programs
-export const searchPrograms = async (req: Request, res: Response) => {
+export const searchPrograms = async (req: Request, res: Response): Promise<void> => {
   try {
     const { 
       query, 
@@ -167,16 +176,16 @@ export const searchPrograms = async (req: Request, res: Response) => {
 
     const whereClause: any = { isActive: true };
     
-    // חיפוש טקסט
+    // חיפוש טקסט - SQLite compatible
     if (query) {
       whereClause.OR = [
-        { nameHebrew: { contains: query as string, mode: 'insensitive' } },
-        { nameEnglish: { contains: query as string, mode: 'insensitive' } },
-        { description: { contains: query as string, mode: 'insensitive' } },
+        { nameHebrew: { contains: query as string } },
+        { nameEnglish: { contains: query as string } },
+        { description: { contains: query as string } },
         { institution: { 
           OR: [
-            { nameHebrew: { contains: query as string, mode: 'insensitive' } },
-            { nameEnglish: { contains: query as string, mode: 'insensitive' } }
+            { nameHebrew: { contains: query as string } },
+            { nameEnglish: { contains: query as string } }
           ]
         }}
       ];
@@ -188,20 +197,35 @@ export const searchPrograms = async (req: Request, res: Response) => {
     if (city) {
       whereClause.institution = {
         ...whereClause.institution,
-        city: { contains: city as string, mode: 'insensitive' }
+        city: { contains: city as string }
       };
     }
 
     // סינון לפי דרישות פסיכומטרי
     if (minPsychometric || maxPsychometric) {
-      const psychometricFilter: any = { type: 'PSYCHOMETRIC_SCORE' };
-      if (minPsychometric) psychometricFilter.minScore = { lte: parseInt(minPsychometric as string) };
-      if (maxPsychometric) psychometricFilter.maxScore = { gte: parseInt(maxPsychometric as string) };
-      
-      whereClause.requirements = {
-        some: psychometricFilter
-      };
+      if (minPsychometric) {
+        // User has this score, find programs where user's score is within acceptable range
+        const userScore = parseInt(minPsychometric as string);
+        whereClause.requirements = {
+          some: {
+            type: 'PSYCHOMETRIC_SCORE',
+            minScore: { lte: userScore },
+            maxScore: { gte: userScore }
+          }
+        };
+      } else if (maxPsychometric) {
+        // User's max score, so find programs where max requirement is >= user's score
+        whereClause.requirements = {
+          some: {
+            type: 'PSYCHOMETRIC_SCORE',
+            maxScore: { gte: parseInt(maxPsychometric as string) }
+          }
+        };
+      }
     }
+
+    const limitInt = parseInt(limit as string);
+    const offsetInt = parseInt(offset as string);
 
     const programs = await prisma.program.findMany({
       where: whereClause,
@@ -239,8 +263,13 @@ export const searchPrograms = async (req: Request, res: Response) => {
         { institution: { nameHebrew: 'asc' } },
         { nameHebrew: 'asc' }
       ],
-      take: parseInt(limit as string),
-      skip: parseInt(offset as string)
+      take: limitInt,
+      skip: offsetInt
+    });
+
+    // Get total count for pagination
+    const totalCount = await prisma.program.count({
+      where: whereClause
     });
 
     res.json({
@@ -250,9 +279,9 @@ export const searchPrograms = async (req: Request, res: Response) => {
       data: programs,
       count: programs.length,
       pagination: {
-        limit: parseInt(limit as string),
-        offset: parseInt(offset as string),
-        hasMore: programs.length === parseInt(limit as string)
+        limit: limitInt,
+        offset: offsetInt,
+        hasMore: offsetInt + programs.length < totalCount
       }
     });
   } catch (error) {
@@ -267,7 +296,7 @@ export const searchPrograms = async (req: Request, res: Response) => {
 };
 
 // קבלת דרישות תוכנית - Get program requirements
-export const getProgramRequirements = async (req: Request, res: Response) => {
+export const getProgramRequirements = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     
@@ -313,10 +342,10 @@ export const getProgramRequirements = async (req: Request, res: Response) => {
 };
 
 // סטטיסטיקות תוכניות - Program statistics
-export const getProgramStats = async (req: Request, res: Response) => {
+export const getProgramStats = async (req: Request, res: Response): Promise<void> => {
   try {
     const stats = await prisma.program.groupBy({
-      by: ['type', 'degreeLevel'],
+      by: ['type'],
       where: { isActive: true },
       _count: {
         id: true

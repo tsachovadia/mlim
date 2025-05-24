@@ -7,6 +7,29 @@ alwaysApply: true
 
 This guide outlines the typical process for using Task Master to manage software development projects.
 
+## 🧪 MANDATORY: TDD-First Development
+
+**ALL development work MUST follow Test-Driven Development (TDD)** - see [tdd-methodology.mdc](mdc:.cursor/rules/tdd-methodology.mdc) for complete guidelines.
+
+### **TDD Integration with Task Master:**
+1. **Get Task**: `task-master show <id>` - understand requirements
+2. **RED Phase**: Write failing tests first
+   - Create comprehensive test suite covering all requirements
+   - Commit tests: `git commit -m "test: add failing tests for task <id>"`
+3. **GREEN Phase**: Implement minimal code to pass tests
+   - Write only enough code to make tests pass
+   - Commit implementation: `git commit -m "feat: implement task <id>"`
+4. **REFACTOR Phase**: Improve code quality
+   - Optimize and clean up while keeping tests green
+   - Commit refactoring: `git commit -m "refactor: optimize task <id>"`
+5. **Mark Complete**: `task-master set-status --id=<id> --status=done`
+
+### **Frequent Commit Requirements:**
+- ✅ **Every TDD phase**: RED, GREEN, REFACTOR commits
+- ✅ **Every test file**: Immediate commit when creating tests
+- ✅ **Every feature**: Multiple commits throughout TDD cycle
+- ✅ **Every bug fix**: Test reproduction + fix commits
+
 ## Primary Interaction: MCP Server vs. CLI
 
 Task Master offers two primary ways to interact:
@@ -26,11 +49,12 @@ Task Master offers two primary ways to interact:
     - The CLI commands often mirror the MCP tools (e.g., `task-master list` corresponds to `get_tasks`).
     - Refer to [`taskmaster.mdc`](mdc:.cursor/rules/taskmaster.mdc) for a detailed command reference.
 
-## Standard Development Workflow Process
+## TDD-Enhanced Development Workflow Process
 
--   Start new projects by running `initialize_project` tool / `task-master init` or `parse_prd` / `task-master parse-prd --input='<prd-file.txt>'` (see [`taskmaster.mdc`](mdc:.cursor/rules/taskmaster.mdc)) to generate initial tasks.json
+-   **Start TDD cycle** for new projects by running `initialize_project` tool / `task-master init` or `parse_prd` / `task-master parse-prd --input='<prd-file.txt>'` (see [`taskmaster.mdc`](mdc:.cursor/rules/taskmaster.mdc)) to generate initial tasks.json
 -   Begin coding sessions with `get_tasks` / `task-master list` (see [`taskmaster.mdc`](mdc:.cursor/rules/taskmaster.mdc)) to see current tasks, status, and IDs
 -   Determine the next task to work on using `next_task` / `task-master next` (see [`taskmaster.mdc`](mdc:.cursor/rules/taskmaster.mdc)).
+-   **MANDATORY TDD**: Before any implementation, write comprehensive failing tests
 -   Analyze task complexity with `analyze_project_complexity` / `task-master analyze-complexity --research` (see [`taskmaster.mdc`](mdc:.cursor/rules/taskmaster.mdc)) before breaking down tasks
 -   Review complexity report using `complexity_report` / `task-master complexity-report` (see [`taskmaster.mdc`](mdc:.cursor/rules/taskmaster.mdc)).
 -   Select tasks based on dependencies (all marked 'done'), priority level, and ID order
@@ -38,8 +62,9 @@ Task Master offers two primary ways to interact:
 -   View specific task details using `get_task` / `task-master show <id>` (see [`taskmaster.mdc`](mdc:.cursor/rules/taskmaster.mdc)) to understand implementation requirements
 -   Break down complex tasks using `expand_task` / `task-master expand --id=<id> --force --research` (see [`taskmaster.mdc`](mdc:.cursor/rules/taskmaster.mdc)) with appropriate flags like `--force` (to replace existing subtasks) and `--research`.
 -   Clear existing subtasks if needed using `clear_subtasks` / `task-master clear-subtasks --id=<id>` (see [`taskmaster.mdc`](mdc:.cursor/rules/taskmaster.mdc)) before regenerating
--   Implement code following task details, dependencies, and project standards
+-   **TDD Implementation**: Follow RED-GREEN-REFACTOR cycle for all code changes
 -   Verify tasks according to test strategies before marking as complete (See [`tests.mdc`](mdc:.cursor/rules/tests.mdc))
+-   **Frequent commits**: After each TDD phase and significant progress
 -   Mark completed tasks with `set_task_status` / `task-master set-status --id=<id> --status=done` (see [`taskmaster.mdc`](mdc:.cursor/rules/taskmaster.mdc))
 -   Update dependent tasks when implementation differs from original plan using `update` / `task-master update --from=<id> --prompt="..."` or `update_task` / `task-master update-task --id=<id> --prompt="..."` (see [`taskmaster.mdc`](mdc:.cursor/rules/taskmaster.mdc))
 -   Add new tasks discovered during implementation using `add_task` / `task-master add-task --prompt="..." --research` (see [`taskmaster.mdc`](mdc:.cursor/rules/taskmaster.mdc)).

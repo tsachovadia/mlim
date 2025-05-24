@@ -5,14 +5,52 @@ alwaysApply: false
 ---
 # PROJECT GUIDELINES
 
-## 🔄 Git Workflow Requirements
+## 🧪 MANDATORY: Test-Driven Development (TDD)
 
-- **Commit on Every New File**: Any new file creation requires immediate git commit with descriptive message
-- **Commit on Significant Changes**: Major modifications to existing files require commits
-- **Push When Possible**: If remote repository is configured, push commits immediately
-- **Commit Messages**: Always in English, descriptive, following conventional commits format
-- **Code and Comments**: All code, filenames, variables, and comments in English
-- **File Structure**: Follow English naming conventions for all files and directories
+**ALL development work MUST follow TDD methodology** - see [tdd-methodology.mdc](mdc:.cursor/rules/tdd-methodology.mdc) for complete guidelines.
+
+### **TDD Red-Green-Refactor Cycle Required:**
+1. **RED**: Write failing tests first - `git commit -m "test: add failing tests for X"`
+2. **GREEN**: Minimal code to pass tests - `git commit -m "feat: implement X"`  
+3. **REFACTOR**: Improve code quality - `git commit -m "refactor: optimize X"`
+
+### **No Production Code Without Tests:**
+- ❌ **NEVER** write implementation before tests
+- ✅ **ALWAYS** start with comprehensive failing tests
+- ✅ **COMMIT** after each TDD phase
+- ✅ **VERIFY** tests actually fail initially
+
+## 🔄 Enhanced Git Workflow Requirements
+
+### **Frequent Commit Strategy** 
+- **Every TDD Phase**: Commit after RED, GREEN, and REFACTOR phases
+- **Every Test File**: Immediate commit when creating new test files
+- **Every Bug Fix**: Commit test that reproduces bug, then commit fix
+- **Every Feature**: Multiple commits throughout TDD cycle
+- **Every Refactor**: Commit improvements while keeping tests green
+
+### **Commit Message Conventions**
+```bash
+# TDD-focused commit messages
+test: add comprehensive API tests for institution search
+feat: implement institution search with pagination  
+fix: resolve SQLite compatibility issues in search
+refactor: extract common validation patterns
+docs: update API documentation for search endpoints
+```
+
+### **Commit Frequency Goals**
+- ✅ **Multiple commits per hour** during active development
+- ✅ **Small, focused commits** (single responsibility)
+- ✅ **Clear progression** showing TDD methodology
+- ✅ **Working code** at every commit (GREEN state)
+
+### **Before ANY Commit - Quality Gates**
+- [ ] All tests passing ✅
+- [ ] TypeScript compilation clean ✅
+- [ ] No console errors ✅
+- [ ] Hebrew text requirements met ✅
+- [ ] TDD cycle phase completed ✅
 
 ## 🇮🇱 Hebrew Language Requirements
 
@@ -36,6 +74,7 @@ alwaysApply: false
 - ✅ **Git Messages**: Commit messages and branch names
 - ✅ **Technical Documentation**: Architecture docs, README files
 - ✅ **Database**: Table names, column names, constraints
+- ✅ **Tests**: Test descriptions and test code
 
 ## 📝 Implementation Examples
 
@@ -106,20 +145,40 @@ alwaysApply: false
 - **Cards**: Header alignment and content flow for RTL
 - **Forms**: Label placement and validation message positioning
 
-## 📋 Commit Workflow
+## 📋 TDD-Enhanced Commit Workflow
 
-1. **Create/Modify Files**: Make necessary changes
-2. **Test Locally**: Ensure Hebrew text displays correctly
-3. **Stage Changes**: `git add <files>`
-4. **Commit**: `git commit -m "feat/fix: descriptive English message"`
-5. **Push** (if remote configured): `git push origin main`
+1. **Start TDD Cycle**: Write failing tests first
+2. **RED Commit**: `git add tests/ && git commit -m "test: add failing tests for X"`
+3. **Implement Minimal Code**: Make tests pass
+4. **GREEN Commit**: `git add . && git commit -m "feat: implement X"`
+5. **Refactor** (if needed): Improve code while keeping tests green
+6. **REFACTOR Commit**: `git add . && git commit -m "refactor: optimize X"`
+7. **Push** (if remote configured): `git push origin main`
 
-## 🔍 Quality Checklist
+## 🔍 Enhanced Quality Checklist
 
 Before any commit, verify:
+- [ ] **TDD cycle completed** (RED-GREEN-REFACTOR)
+- [ ] **All tests passing** ✅
+- [ ] **Test coverage maintained** ✅
 - [ ] All user-facing text is in Hebrew
 - [ ] RTL layout works correctly
 - [ ] Hebrew fonts load properly
 - [ ] No English text visible to users
 - [ ] Code and comments remain in English
 - [ ] File names and structure in English
+- [ ] TypeScript compilation clean
+- [ ] No console errors
+
+## 🎯 Success Metrics
+
+### **Development Quality Indicators:**
+- ✅ **Frequent commits** (multiple per hour during active development)
+- ✅ **Clear TDD progression** in git history
+- ✅ **Fast test suite** (< 30 seconds)
+- ✅ **High test coverage** (>90% for critical paths)
+- ✅ **Working software** at every commit
+- ✅ **Confident refactoring** enabled by comprehensive tests
+
+---
+*TDD methodology and frequent commits are mandatory for all development work. See [tdd-methodology.mdc](mdc:.cursor/rules/tdd-methodology.mdc) for detailed guidelines.*

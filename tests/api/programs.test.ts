@@ -455,8 +455,8 @@ describe('Programs API', () => {
       await prisma.programRequirement.create({
         data: {
           type: 'PSYCHOMETRIC_SCORE',
-          minScore: 600,
-          maxScore: 700,
+          minScore: 700,
+          maxScore: 800,
           isRequired: true,
           programId: programs[1].id
         }
