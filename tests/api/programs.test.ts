@@ -543,10 +543,10 @@ describe('Programs API', () => {
       });
       
       // Check that required requirements come first
-      expect(response.body.data.every(req => req.isRequired)).toBe(true);
+      expect(response.body.data.every((req: any) => req.isRequired)).toBe(true);
       
       // Check requirement types
-      const types = response.body.data.map(req => req.type);
+      const types = response.body.data.map((req: any) => req.type);
       expect(types).toContain('PSYCHOMETRIC_SCORE');
       expect(types).toContain('BAGRUT_AVERAGE');
       expect(types).toContain('BAGRUT_SUBJECT');
@@ -617,7 +617,7 @@ describe('Programs API', () => {
       
       // Check grouping by type and degree level
       const csPrograms = response.body.data.programsByType.find(
-        stat => stat.type === 'COMPUTER_SCIENCE'
+        (stat: any) => stat.type === 'COMPUTER_SCIENCE'
       );
       expect(csPrograms._count.id).toBe(2);
     });
