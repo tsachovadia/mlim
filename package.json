@@ -16,7 +16,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "db:migrate": "npx prisma migrate dev",
-    "db:seed": "node database/seeds/index.js",
+    "db:seed": "npx ts-node database/seeds/index.ts",
     "db:reset": "npx prisma migrate reset"
   },
   "keywords": [

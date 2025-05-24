@@ -73,15 +73,6 @@ app.use((err: Error, req: Request, res: Response, next: any) => {
   });
 });
 
-// 404 handler
-app.use('*', (req: Request, res: Response) => {
-  res.status(404).json({
-    error: 'נתיב לא נמצא',
-    errorEn: 'Route not found',
-    path: req.originalUrl
-  });
-});
-
 // Database connection and server startup
 async function startServer() {
   try {
