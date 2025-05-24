@@ -13,56 +13,60 @@ import {
   DEFAULT_LIMIT, 
   DEFAULT_OFFSET,
   MESSAGES,
-  INSTITUTION_SELECT,
-  FACULTY_SELECT,
-  PROGRAM_SELECT
+  USER_ACADEMIC_PROFILE_INCLUDE,
+  USER_PROGRAM_MATCHES_INCLUDE
 } from '../utils/constants';
 import { 
   parsePaginationParams, 
   calculatePagination
 } from '../utils/queryHelpers';
+import {
+  validateUserCreation,
+  validateUserUpdate,
+  sanitizeUserInput,
+  isValidEmail
+} from '../utils/validationHelpers';
+import {
+  buildUserWhereClause,
+  buildUserMatchesWhereClause,
+  checkUserExists,
+  checkEmailExists,
+  getUserCount,
+  getUserMatchesCount
+} from '../utils/userHelpers';
 
 const prisma = new PrismaClient();
-
-// Email validation function
-const isValidEmail = (email: string): boolean => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-};
 
 // יצירת משתמש חדש - Create new user
 export const createUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, firstName, lastName, birthYear, city, phone } = req.body;
+    const userData = req.body;
 
-    // Validate required fields
-    if (!email || !firstName || !lastName) {
-      sendErrorResponse(
-        res,
-        400,
-        MESSAGES.USERS.VALIDATION_ERROR,
-        MESSAGES.USERS.VALIDATION_ERROR_EN
-      );
-      return;
-    }
-
-    // Validate email format
-    if (!isValidEmail(email)) {
-      sendErrorResponse(
-        res,
-        400,
-        MESSAGES.USERS.INVALID_EMAIL,
-        MESSAGES.USERS.INVALID_EMAIL_EN
-      );
+    // Validate input data
+    const validation = validateUserCreation(userData);
+    if (!validation.isValid) {
+      // Check for specific validation errors
+      if (validation.errors.includes('Invalid email format')) {
+        sendErrorResponse(
+          res,
+          400,
+          MESSAGES.USERS.INVALID_EMAIL,
+          MESSAGES.USERS.INVALID_EMAIL_EN
+        );
+      } else {
+        sendErrorResponse(
+          res,
+          400,
+          MESSAGES.USERS.VALIDATION_ERROR,
+          MESSAGES.USERS.VALIDATION_ERROR_EN
+        );
+      }
       return;
     }
 
     // Check if email already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
-    });
-
-    if (existingUser) {
+    const emailExists = await checkEmailExists(userData.email);
+    if (emailExists) {
       sendErrorResponse(
         res,
         409,
@@ -75,12 +79,12 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
     // Create user
     const user = await prisma.user.create({
       data: {
-        email,
-        firstName,
-        lastName,
-        birthYear: birthYear || null,
-        city: city || null,
-        phone: phone || null
+        email: userData.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        birthYear: userData.birthYear || null,
+        city: userData.city || null,
+        phone: userData.phone || null
       }
     });
 
@@ -116,21 +120,14 @@ export const getAllUsers = async (req: Request, res: Response): Promise<void> =>
       offset as string
     );
 
-    const whereClause: any = {};
-    
-    if (city) {
-      whereClause.city = { contains: city as string };
-    }
+    const whereClause = buildUserWhereClause({ city: city as string });
 
     const [users, totalCount] = await Promise.all([
       prisma.user.findMany({
         where: whereClause,
         include: {
           academicProfile: {
-            include: {
-              bagrutSubjects: true,
-              preferences: true
-            }
+            include: USER_ACADEMIC_PROFILE_INCLUDE
           }
         },
         orderBy: [
@@ -140,7 +137,7 @@ export const getAllUsers = async (req: Request, res: Response): Promise<void> =>
         take: limitInt,
         skip: offsetInt
       }),
-      prisma.user.count({ where: whereClause })
+      getUserCount(whereClause)
     ]);
 
     const pagination = calculatePagination(limitInt, offsetInt, totalCount);
@@ -173,23 +170,7 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
       where: { id },
       include: {
         academicProfile: {
-          include: {
-            bagrutSubjects: {
-              orderBy: [
-                { subjectName: 'desc' }, // מתמטיקה comes before אנגלית in Hebrew alphabetical desc order
-                { score: 'desc' }
-              ]
-            },
-            preferences: true
-          }
-        },
-        programMatches: {
-          include: {
-            program: {
-              select: PROGRAM_SELECT
-            }
-          },
-          orderBy: { overallScore: 'desc' }
+          include: USER_ACADEMIC_PROFILE_INCLUDE
         }
       }
     });
@@ -203,9 +184,21 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
+    // Get program matches separately to maintain proper structure
+    const programMatches = await prisma.programMatch.findMany({
+      where: { userId: id },
+      include: USER_PROGRAM_MATCHES_INCLUDE,
+      orderBy: { overallScore: 'desc' }
+    });
+
+    const userWithMatches = {
+      ...user,
+      programMatches
+    };
+
     sendSuccessResponse(
       res,
-      user,
+      userWithMatches,
       MESSAGES.USERS.LOADED_SUCCESS,
       MESSAGES.USERS.LOADED_SUCCESS_EN
     );
@@ -224,10 +217,10 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
 export const updateUser = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+    const rawUpdateData = req.body;
 
     // Prevent email modification
-    if (updateData.email) {
+    if (rawUpdateData.email) {
       sendErrorResponse(
         res,
         400,
@@ -238,11 +231,8 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
     }
 
     // Check if user exists
-    const existingUser = await prisma.user.findUnique({
-      where: { id }
-    });
-
-    if (!existingUser) {
+    const userExists = await checkUserExists(id);
+    if (!userExists) {
       sendNotFoundResponse(
         res,
         MESSAGES.USERS.NOT_FOUND,
@@ -251,11 +241,19 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    // Remove email from update data if somehow included
-    delete updateData.email;
-    delete updateData.id;
-    delete updateData.createdAt;
-    delete updateData.updatedAt;
+    // Sanitize and validate update data
+    const updateData = sanitizeUserInput(rawUpdateData);
+    const validation = validateUserUpdate(updateData);
+    
+    if (!validation.isValid) {
+      sendErrorResponse(
+        res,
+        400,
+        validation.errors.join(', '),
+        validation.errors.join(', ')
+      );
+      return;
+    }
 
     const updatedUser = await prisma.user.update({
       where: { id },
@@ -288,11 +286,8 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
     const { id } = req.params;
 
     // Check if user exists
-    const existingUser = await prisma.user.findUnique({
-      where: { id }
-    });
-
-    if (!existingUser) {
+    const userExists = await checkUserExists(id);
+    if (!userExists) {
       sendNotFoundResponse(
         res,
         MESSAGES.USERS.NOT_FOUND,
@@ -339,11 +334,8 @@ export const getUserMatches = async (req: Request, res: Response): Promise<void>
     );
 
     // Check if user exists
-    const user = await prisma.user.findUnique({
-      where: { id }
-    });
-
-    if (!user) {
+    const userExists = await checkUserExists(id);
+    if (!userExists) {
       sendNotFoundResponse(
         res,
         MESSAGES.USERS.NOT_FOUND,
@@ -352,25 +344,19 @@ export const getUserMatches = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    const whereClause: any = { userId: id };
-    
-    if (confidenceLevel) {
-      whereClause.confidenceLevel = confidenceLevel;
-    }
+    const whereClause = buildUserMatchesWhereClause(id, {
+      confidenceLevel: confidenceLevel as string
+    });
 
     const [matches, totalCount] = await Promise.all([
       prisma.programMatch.findMany({
         where: whereClause,
-        include: {
-          program: {
-            select: PROGRAM_SELECT
-          }
-        },
+        include: USER_PROGRAM_MATCHES_INCLUDE,
         orderBy: { overallScore: 'desc' },
         take: limitInt,
         skip: offsetInt
       }),
-      prisma.programMatch.count({ where: whereClause })
+      getUserMatchesCount(whereClause)
     ]);
 
     const pagination = calculatePagination(limitInt, offsetInt, totalCount);

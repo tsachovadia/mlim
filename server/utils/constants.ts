@@ -108,4 +108,21 @@ export const PROGRAM_SELECT = {
   faculty: {
     select: FACULTY_SELECT
   }
+};
+
+// User-specific database selections
+export const USER_ACADEMIC_PROFILE_INCLUDE = {
+  bagrutSubjects: {
+    orderBy: [
+      { subjectName: 'desc' as const },
+      { score: 'desc' as const }
+    ]
+  },
+  preferences: true
+};
+
+export const USER_PROGRAM_MATCHES_INCLUDE = {
+  program: {
+    select: PROGRAM_SELECT
+  }
 }; 
