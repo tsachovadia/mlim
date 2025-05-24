@@ -3,6 +3,26 @@
 
 import { Request, Response } from 'express';
 import { PrismaClient, ProgramType, DegreeLevel } from '@prisma/client';
+import { 
+  sendSuccessResponse, 
+  sendNotFoundResponse, 
+  sendServerErrorResponse 
+} from '../utils/responseHelpers';
+import { 
+  DEFAULT_LIMIT, 
+  DEFAULT_OFFSET, 
+  MAX_MATCHES_DISPLAY,
+  MESSAGES,
+  INSTITUTION_SELECT,
+  FACULTY_SELECT,
+  USER_SELECT
+} from '../utils/constants';
+import { 
+  buildProgramWhereClause, 
+  parsePaginationParams, 
+  calculatePagination,
+  ProgramFilters 
+} from '../utils/queryHelpers';
 
 const prisma = new PrismaClient();
 
@@ -14,83 +34,65 @@ export const getAllPrograms = async (req: Request, res: Response): Promise<void>
       degreeLevel, 
       institutionId, 
       city,
-      limit = 20,
-      offset = 0 
+      limit = DEFAULT_LIMIT,
+      offset = DEFAULT_OFFSET 
     } = req.query;
 
-    const whereClause: any = { isActive: true };
-    
-    if (type) whereClause.type = type as ProgramType;
-    if (degreeLevel) whereClause.degreeLevel = degreeLevel as DegreeLevel;
-    if (institutionId) whereClause.institutionId = institutionId as string;
-    if (city) {
-      whereClause.institution = {
-        city: { contains: city as string }
-      };
-    }
+    const filters: ProgramFilters = {
+      type: type as string,
+      degreeLevel: degreeLevel as string,
+      institutionId: institutionId as string,
+      city: city as string
+    };
 
-    const limitInt = parseInt(limit as string);
-    const offsetInt = parseInt(offset as string);
+    const { limit: limitInt, offset: offsetInt } = parsePaginationParams(
+      limit as string, 
+      offset as string
+    );
 
-    const programs = await prisma.program.findMany({
-      where: whereClause,
-      include: {
-        institution: {
-          select: {
-            id: true,
-            nameHebrew: true,
-            nameEnglish: true,
-            city: true,
-            logoUrl: true
+    const whereClause = buildProgramWhereClause(filters);
+
+    const [programs, totalCount] = await Promise.all([
+      prisma.program.findMany({
+        where: whereClause,
+        include: {
+          institution: { select: INSTITUTION_SELECT },
+          faculty: { select: FACULTY_SELECT },
+          requirements: {
+            orderBy: { isRequired: 'desc' }
+          },
+          _count: {
+            select: { matches: true }
           }
         },
-        faculty: {
-          select: {
-            id: true,
-            nameHebrew: true,
-            nameEnglish: true
-          }
-        },
-        requirements: {
-          orderBy: { isRequired: 'desc' }
-        },
-        _count: {
-          select: { matches: true }
-        }
-      },
-      orderBy: [
-        { institution: { nameHebrew: 'asc' } },
-        { nameHebrew: 'asc' }
-      ],
-      take: limitInt,
-      skip: offsetInt
-    });
+        orderBy: [
+          { institution: { nameHebrew: 'asc' } },
+          { nameHebrew: 'asc' }
+        ],
+        take: limitInt,
+        skip: offsetInt
+      }),
+      prisma.program.count({ where: whereClause })
+    ]);
 
-    // Get total count for pagination
-    const totalCount = await prisma.program.count({
-      where: whereClause
-    });
+    const pagination = calculatePagination(limitInt, offsetInt, totalCount);
 
-    res.json({
-      success: true,
-      message: 'תוכניות לימודים נטענו בהצלחה',
-      messageEn: 'Programs loaded successfully',
-      data: programs,
-      count: programs.length,
-      pagination: {
-        limit: limitInt,
-        offset: offsetInt,
-        hasMore: offsetInt + programs.length < totalCount
-      }
-    });
+    sendSuccessResponse(
+      res,
+      programs,
+      MESSAGES.PROGRAMS.LOADED_SUCCESS,
+      MESSAGES.PROGRAMS.LOADED_SUCCESS_EN,
+      programs.length,
+      pagination
+    );
   } catch (error) {
     console.error('Error fetching programs:', error);
-    res.status(500).json({
-      success: false,
-      error: 'שגיאה בטעינת התוכניות',
-      errorEn: 'Error loading programs',
-      details: process.env.NODE_ENV === 'development' ? error : undefined
-    });
+    sendServerErrorResponse(
+      res,
+      MESSAGES.PROGRAMS.LOAD_ERROR,
+      MESSAGES.PROGRAMS.LOAD_ERROR_EN,
+      error
+    );
   }
 };
 
@@ -112,49 +114,37 @@ export const getProgramById = async (req: Request, res: Response): Promise<void>
         },
         matches: {
           include: {
-            user: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                academicProfile: {
-                  select: {
-                    psychometricScore: true,
-                    bagrutAverage: true
-                  }
-                }
-              }
-            }
+            user: { select: USER_SELECT }
           },
           orderBy: { confidenceLevel: 'desc' },
-          take: 10
+          take: MAX_MATCHES_DISPLAY
         }
       }
     });
 
     if (!program) {
-      res.status(404).json({
-        success: false,
-        error: 'תוכנית לא נמצאה',
-        errorEn: 'Program not found'
-      });
+      sendNotFoundResponse(
+        res,
+        MESSAGES.PROGRAMS.NOT_FOUND,
+        MESSAGES.PROGRAMS.NOT_FOUND_EN
+      );
       return;
     }
 
-    res.json({
-      success: true,
-      message: 'תוכנית נטענה בהצלחה',
-      messageEn: 'Program loaded successfully',
-      data: program
-    });
+    sendSuccessResponse(
+      res,
+      program,
+      MESSAGES.PROGRAMS.LOADED_SUCCESS,
+      MESSAGES.PROGRAMS.LOADED_SUCCESS_EN
+    );
   } catch (error) {
     console.error('Error fetching program:', error);
-    res.status(500).json({
-      success: false,
-      error: 'שגיאה בטעינת התוכנית',
-      errorEn: 'Error loading program',
-      details: process.env.NODE_ENV === 'development' ? error : undefined
-    });
+    sendServerErrorResponse(
+      res,
+      MESSAGES.PROGRAMS.LOAD_ERROR,
+      MESSAGES.PROGRAMS.LOAD_ERROR_EN,
+      error
+    );
   }
 };
 
@@ -170,128 +160,75 @@ export const searchPrograms = async (req: Request, res: Response): Promise<void>
       maxPsychometric,
       minBagrut,
       maxBagrut,
-      limit = 20,
-      offset = 0 
+      limit = DEFAULT_LIMIT,
+      offset = DEFAULT_OFFSET 
     } = req.query;
 
-    const whereClause: any = { isActive: true };
-    
-    // חיפוש טקסט - SQLite compatible
-    if (query) {
-      whereClause.OR = [
-        { nameHebrew: { contains: query as string } },
-        { nameEnglish: { contains: query as string } },
-        { description: { contains: query as string } },
-        { institution: { 
-          OR: [
-            { nameHebrew: { contains: query as string } },
-            { nameEnglish: { contains: query as string } }
-          ]
-        }}
-      ];
-    }
+    const filters: ProgramFilters = {
+      query: query as string,
+      type: type as string,
+      degreeLevel: degreeLevel as string,
+      city: city as string,
+      minPsychometric: minPsychometric as string,
+      maxPsychometric: maxPsychometric as string,
+      minBagrut: minBagrut as string,
+      maxBagrut: maxBagrut as string
+    };
 
-    // סינונים
-    if (type) whereClause.type = type as ProgramType;
-    if (degreeLevel) whereClause.degreeLevel = degreeLevel as DegreeLevel;
-    if (city) {
-      whereClause.institution = {
-        ...whereClause.institution,
-        city: { contains: city as string }
-      };
-    }
+    const { limit: limitInt, offset: offsetInt } = parsePaginationParams(
+      limit as string, 
+      offset as string
+    );
 
-    // סינון לפי דרישות פסיכומטרי
-    if (minPsychometric || maxPsychometric) {
-      if (minPsychometric) {
-        // User has this score, find programs where user's score is within acceptable range
-        const userScore = parseInt(minPsychometric as string);
-        whereClause.requirements = {
-          some: {
-            type: 'PSYCHOMETRIC_SCORE',
-            minScore: { lte: userScore },
-            maxScore: { gte: userScore }
-          }
-        };
-      } else if (maxPsychometric) {
-        // User's max score, so find programs where max requirement is >= user's score
-        whereClause.requirements = {
-          some: {
-            type: 'PSYCHOMETRIC_SCORE',
-            maxScore: { gte: parseInt(maxPsychometric as string) }
-          }
-        };
-      }
-    }
+    const whereClause = buildProgramWhereClause(filters);
 
-    const limitInt = parseInt(limit as string);
-    const offsetInt = parseInt(offset as string);
-
-    const programs = await prisma.program.findMany({
-      where: whereClause,
-      include: {
-        institution: {
-          select: {
-            id: true,
-            nameHebrew: true,
-            nameEnglish: true,
-            city: true,
-            logoUrl: true
-          }
-        },
-        faculty: {
-          select: {
-            id: true,
-            nameHebrew: true,
-            nameEnglish: true
-          }
-        },
-        requirements: {
-          where: {
-            OR: [
-              { type: 'PSYCHOMETRIC_SCORE' },
-              { type: 'BAGRUT_AVERAGE' }
-            ]
+    const [programs, totalCount] = await Promise.all([
+      prisma.program.findMany({
+        where: whereClause,
+        include: {
+          institution: { select: INSTITUTION_SELECT },
+          faculty: { select: FACULTY_SELECT },
+          requirements: {
+            where: {
+              OR: [
+                { type: 'PSYCHOMETRIC_SCORE' },
+                { type: 'BAGRUT_AVERAGE' }
+              ]
+            },
+            orderBy: { isRequired: 'desc' }
           },
-          orderBy: { isRequired: 'desc' }
+          _count: {
+            select: { matches: true }
+          }
         },
-        _count: {
-          select: { matches: true }
-        }
-      },
-      orderBy: [
-        { institution: { nameHebrew: 'asc' } },
-        { nameHebrew: 'asc' }
-      ],
-      take: limitInt,
-      skip: offsetInt
-    });
+        orderBy: [
+          { institution: { nameHebrew: 'asc' } },
+          { nameHebrew: 'asc' }
+        ],
+        take: limitInt,
+        skip: offsetInt
+      }),
+      prisma.program.count({ where: whereClause })
+    ]);
 
-    // Get total count for pagination
-    const totalCount = await prisma.program.count({
-      where: whereClause
-    });
+    const pagination = calculatePagination(limitInt, offsetInt, totalCount);
 
-    res.json({
-      success: true,
-      message: 'חיפוש הושלם בהצלחה',
-      messageEn: 'Search completed successfully',
-      data: programs,
-      count: programs.length,
-      pagination: {
-        limit: limitInt,
-        offset: offsetInt,
-        hasMore: offsetInt + programs.length < totalCount
-      }
-    });
+    sendSuccessResponse(
+      res,
+      programs,
+      MESSAGES.PROGRAMS.SEARCH_SUCCESS,
+      MESSAGES.PROGRAMS.SEARCH_SUCCESS_EN,
+      programs.length,
+      pagination
+    );
   } catch (error) {
     console.error('Error searching programs:', error);
-    res.status(500).json({
-      success: false,
-      error: 'שגיאה בחיפוש תוכניות',
-      errorEn: 'Error searching programs',
-      details: process.env.NODE_ENV === 'development' ? error : undefined
-    });
+    sendServerErrorResponse(
+      res,
+      MESSAGES.PROGRAMS.SEARCH_ERROR,
+      MESSAGES.PROGRAMS.SEARCH_ERROR_EN,
+      error
+    );
   }
 };
 
@@ -323,77 +260,79 @@ export const getProgramRequirements = async (req: Request, res: Response): Promi
       ]
     });
 
-    res.json({
-      success: true,
-      message: 'דרישות התוכנית נטענו בהצלחה',
-      messageEn: 'Program requirements loaded successfully',
-      data: requirements,
-      count: requirements.length
-    });
+    sendSuccessResponse(
+      res,
+      requirements,
+      MESSAGES.REQUIREMENTS.LOADED_SUCCESS,
+      MESSAGES.REQUIREMENTS.LOADED_SUCCESS_EN,
+      requirements.length
+    );
   } catch (error) {
     console.error('Error fetching program requirements:', error);
-    res.status(500).json({
-      success: false,
-      error: 'שגיאה בטעינת דרישות התוכנית',
-      errorEn: 'Error loading program requirements',
-      details: process.env.NODE_ENV === 'development' ? error : undefined
-    });
+    sendServerErrorResponse(
+      res,
+      MESSAGES.REQUIREMENTS.LOAD_ERROR,
+      MESSAGES.REQUIREMENTS.LOAD_ERROR_EN,
+      error
+    );
   }
 };
 
 // סטטיסטיקות תוכניות - Program statistics
 export const getProgramStats = async (req: Request, res: Response): Promise<void> => {
   try {
-    const stats = await prisma.program.groupBy({
-      by: ['type'],
-      where: { isActive: true },
-      _count: {
-        id: true
-      },
-      orderBy: {
-        type: 'asc'
-      }
-    });
-
-    const institutionStats = await prisma.institution.findMany({
-      select: {
-        id: true,
-        nameHebrew: true,
-        city: true,
+    const [stats, institutionStats, totalPrograms, totalMatches] = await Promise.all([
+      prisma.program.groupBy({
+        by: ['type'],
+        where: { isActive: true },
         _count: {
-          select: {
-            programs: { where: { isActive: true } }
-          }
-        }
-      },
-      orderBy: {
-        nameHebrew: 'asc'
-      }
-    });
-
-    const totalPrograms = await prisma.program.count({ where: { isActive: true } });
-    const totalMatches = await prisma.programMatch.count();
-
-    res.json({
-      success: true,
-      message: 'סטטיסטיקות נטענו בהצלחה',
-      messageEn: 'Statistics loaded successfully',
-      data: {
-        overview: {
-          totalPrograms,
-          totalMatches
+          id: true
         },
-        programsByType: stats,
-        institutionStats
-      }
-    });
+        orderBy: {
+          type: 'asc'
+        }
+      }),
+      prisma.institution.findMany({
+        select: {
+          id: true,
+          nameHebrew: true,
+          city: true,
+          _count: {
+            select: {
+              programs: { where: { isActive: true } }
+            }
+          }
+        },
+        orderBy: {
+          nameHebrew: 'asc'
+        }
+      }),
+      prisma.program.count({ where: { isActive: true } }),
+      prisma.programMatch.count()
+    ]);
+
+    const statsData = {
+      overview: {
+        totalPrograms,
+        totalMatches
+      },
+      programsByType: stats,
+      institutionStats
+    };
+
+    sendSuccessResponse(
+      res,
+      statsData,
+      MESSAGES.STATS.LOADED_SUCCESS,
+      MESSAGES.STATS.LOADED_SUCCESS_EN
+    );
   } catch (error) {
     console.error('Error fetching program stats:', error);
-    res.status(500).json({
-      success: false,
-      error: 'שגיאה בטעינת הסטטיסטיקות',
-      errorEn: 'Error loading statistics',
-      details: process.env.NODE_ENV === 'development' ? error : undefined
-    });
+    sendServerErrorResponse(
+      res,
+      MESSAGES.STATS.LOAD_ERROR,
+      MESSAGES.STATS.LOAD_ERROR_EN,
+      error
+    );
   }
 }; 
