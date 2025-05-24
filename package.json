@@ -8,8 +8,8 @@
     "test": "tests"
   },
   "scripts": {
-    "start": "node server/index.js",
-    "dev": "nodemon server/index.js",
+    "start": "node server/dist/server/index.js",
+    "dev": "nodemon server/dist/server/index.js",
     "build": "npm run build:client && npm run build:server",
     "build:client": "cd client && npm run build",
     "build:server": "tsc -p server/tsconfig.json",
