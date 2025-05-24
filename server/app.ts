@@ -6,6 +6,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import institutionsRouter from './routes/institutions';
 import programsRouter from './routes/programs';
+import usersRouter from './routes/users';
 
 const app: Application = express();
 
@@ -37,6 +38,7 @@ app.get('/api/v1', (req, res) => {
     endpoints: {
       institutions: '/api/v1/institutions',
       programs: '/api/v1/programs',
+      users: '/api/v1/users',
       health: '/health'
     }
   });
@@ -45,6 +47,7 @@ app.get('/api/v1', (req, res) => {
 // API Routes
 app.use('/api/v1/institutions', institutionsRouter);
 app.use('/api/v1/programs', programsRouter);
+app.use('/api/v1/users', usersRouter);
 
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
