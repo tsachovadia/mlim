@@ -9,12 +9,11 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 // מוסדות לימודים - Educational Institutions
@@ -25,7 +24,7 @@ model Institution {
   city          String
   website       String?
   logoUrl       String?   @map("logo_url")
-  description   String?   @db.Text
+  description   String?
   establishedYear Int?    @map("established_year")
   
   // קשרים
@@ -43,7 +42,7 @@ model Faculty {
   id              String      @id @default(cuid())
   nameHebrew      String      @map("name_hebrew")
   nameEnglish     String      @map("name_english")
-  description     String?     @db.Text
+  description     String?
   website         String?
   
   // קשרים
@@ -84,7 +83,7 @@ model Program {
   nameEnglish       String      @map("name_english")
   type              ProgramType
   degreeLevel       DegreeLevel @map("degree_level")
-  description       String?     @db.Text
+  description       String?
   duration          Int         // בשנים
   website           String?
   isActive          Boolean     @default(true) @map("is_active")
@@ -129,7 +128,7 @@ model ProgramRequirement {
   minScore      Float?          @map("min_score")
   maxScore      Float?          @map("max_score")
   requiredLevel String?         @map("required_level") // לאנגלית/מתמטיקה
-  description   String?         @db.Text
+  description   String?
   isRequired    Boolean         @default(true) @map("is_required")
   weight        Float?          // משקל בחישוב ההתאמה
   
@@ -261,8 +260,8 @@ model ProgramMatch {
   preferenceScore   Float?          @map("preference_subscore")
   
   // דרישות חסרות
-  missingRequirements String?       @map("missing_requirements") @db.Text
-  recommendations   String?         @db.Text
+  missingRequirements String?       @map("missing_requirements")
+  recommendations   String?
   
   // מתי בוצעה ההתאמה
   calculatedAt      DateTime        @map("calculated_at")
