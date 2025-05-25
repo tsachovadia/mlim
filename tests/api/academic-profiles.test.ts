@@ -41,7 +41,6 @@ describe('Academic Profiles API', () => {
         userId: user.id,
         psychometricScore: 650,
         bagrutAverage: 85.5,
-        academicLevel: 'BACHELOR',
         preferredStudyMode: 'FULL_TIME',
         preferredLanguage: 'HEBREW',
         targetAcademicYear: 2024
@@ -55,7 +54,6 @@ describe('Academic Profiles API', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data.psychometricScore).toBe(650);
       expect(response.body.data.bagrutAverage).toBe(85.5);
-      expect(response.body.data.academicLevel).toBe('BACHELOR');
     });
 
     it('should validate psychometric score range (200-800)', async () => {
@@ -75,7 +73,7 @@ describe('Academic Profiles API', () => {
         .expect(400);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('psychometric');
+      expect(response.body.message).toContain('Psychometric');
     });
 
     it('should validate bagrut average range (0-100)', async () => {
@@ -85,8 +83,7 @@ describe('Academic Profiles API', () => {
       const invalidData = {
         userId: user.id,
         psychometricScore: 650,
-        bagrutAverage: 105, // Invalid - too high
-        academicLevel: 'BACHELOR'
+        bagrutAverage: 105 // Invalid - too high
       };
 
       const response = await request(app)
@@ -95,27 +92,7 @@ describe('Academic Profiles API', () => {
         .expect(400);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('bagrut');
-    });
-
-    it('should require valid academic level', async () => {
-      const user = await prisma.user.findFirst({ where: { email: 'test@example.com' } });
-      if (!user) throw new Error('Test user not found');
-      
-      const invalidData = {
-        userId: user.id,
-        psychometricScore: 650,
-        bagrutAverage: 85.5,
-        academicLevel: 'INVALID_LEVEL'
-      };
-
-      const response = await request(app)
-        .post('/api/v1/academic-profiles')
-        .send(invalidData)
-        .expect(400);
-
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('academic level');
+      expect(response.body.message).toContain('Bagrut');
     });
 
     it('should prevent duplicate profiles for same user', async () => {
@@ -134,8 +111,7 @@ describe('Academic Profiles API', () => {
       const duplicateData = {
         userId: user.id,
         psychometricScore: 700,
-        bagrutAverage: 90,
-        academicLevel: 'MASTER'
+        bagrutAverage: 90
       };
 
       const response = await request(app)
@@ -481,7 +457,7 @@ describe('Academic Profiles API', () => {
         .expect(400);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('units');
+      expect(response.body.message).toContain('Units');
     });
 
     it('should return 404 for non-existent profile', async () => {

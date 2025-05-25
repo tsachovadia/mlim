@@ -7,6 +7,7 @@ import helmet from 'helmet';
 import institutionsRouter from './routes/institutions';
 import programsRouter from './routes/programs';
 import usersRouter from './routes/users';
+import academicProfilesRouter from './routes/academic-profiles';
 
 const app: Application = express();
 
@@ -39,6 +40,7 @@ app.get('/api/v1', (req, res) => {
       institutions: '/api/v1/institutions',
       programs: '/api/v1/programs',
       users: '/api/v1/users',
+      academicProfiles: '/api/v1/academic-profiles',
       health: '/health'
     }
   });
@@ -48,6 +50,7 @@ app.get('/api/v1', (req, res) => {
 app.use('/api/v1/institutions', institutionsRouter);
 app.use('/api/v1/programs', programsRouter);
 app.use('/api/v1/users', usersRouter);
+app.use('/api/v1/academic-profiles', academicProfilesRouter);
 
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
