@@ -90,9 +90,9 @@ export const getUserById = async (req: Request, res: Response) => {
 ### **Commit Message Format**
 ```bash
 # ✅ DO: Descriptive TDD-focused commit messages
-git commit -m "test: add comprehensive validation tests for institution search API"
-git commit -m "feat: implement institution search with SQLite compatibility"
-git commit -m "fix: resolve pagination logic for search results"
+git commit -m "test: add comprehensive validation tests for institution search_files API"
+git commit -m "feat: implement institution search_files with SQLite compatibility"
+git commit -m "fix: resolve pagination logic for search_files results"
 git commit -m "refactor: extract common database query patterns"
 git commit -m "test: add integration tests for program matching algorithm"
 ```
@@ -204,3 +204,4 @@ beforeEach(async () => {
 
 ---
 *This TDD methodology is mandatory for all development work. No exceptions.*
+

@@ -2,7 +2,7 @@
 // Academic Program Matching Platform
 
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, ProgramType, DegreeLevel } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -119,16 +119,15 @@ export const searchInstitutions = async (req: Request, res: Response): Promise<v
 
     const whereClause: any = {};
     
-    // חיפוש טקסט בשם המוסד - SQLite compatible
     if (query) {
+      const queryString = query as string;
       whereClause.OR = [
-        { nameHebrew: { contains: query as string } },
-        { nameEnglish: { contains: query as string } },
-        { description: { contains: query as string } }
+        { nameHebrew: { contains: queryString } },
+        { nameEnglish: { contains: queryString } },
+        { description: { contains: queryString } }
       ];
     }
 
-    // סינון לפי עיר - SQLite compatible
     if (city) {
       whereClause.city = { contains: city as string };
     }
@@ -136,8 +135,12 @@ export const searchInstitutions = async (req: Request, res: Response): Promise<v
     // סינון לפי תוכניות זמינות
     if (programType || degreeLevel) {
       const programFilter: any = { isActive: true };
-      if (programType) programFilter.type = programType as string;
-      if (degreeLevel) programFilter.degreeLevel = degreeLevel as string;
+      if (programType) {
+        programFilter.type = programType as ProgramType;
+      }
+      if (degreeLevel) {
+        programFilter.degreeLevel = degreeLevel as DegreeLevel;
+      }
       
       whereClause.programs = {
         some: programFilter
@@ -145,8 +148,8 @@ export const searchInstitutions = async (req: Request, res: Response): Promise<v
     }
 
     const programWhereFilter: any = { isActive: true };
-    if (programType) programWhereFilter.type = programType as string;
-    if (degreeLevel) programWhereFilter.degreeLevel = degreeLevel as string;
+    if (programType) programWhereFilter.type = programType as ProgramType;
+    if (degreeLevel) programWhereFilter.degreeLevel = degreeLevel as DegreeLevel;
 
     const limitInt = parseInt(limit as string);
     const offsetInt = parseInt(offset as string);

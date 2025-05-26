@@ -47,16 +47,19 @@ export const checkUserExists = async (userId: string): Promise<boolean> => {
 
 // Check if email already exists (excluding specific user ID)
 export const checkEmailExists = async (email: string, excludeUserId?: string): Promise<boolean> => {
-  const whereClause: any = { email };
+  console.log(`USER HELPER - checkEmailExists called with email: ${email}, excludeUserId: ${excludeUserId}`);
+  const whereConditions: any = { email };
   
   if (excludeUserId) {
-    whereClause.id = { not: excludeUserId };
+    whereConditions.id = { not: excludeUserId };
   }
+  console.log(`USER HELPER - checkEmailExists - whereConditions:`, JSON.stringify(whereConditions));
   
-  const user = await prisma.user.findUnique({
-    where: whereClause,
+  const user = await prisma.user.findFirst({ 
+    where: whereConditions,
     select: { id: true }
   });
+  console.log(`USER HELPER - checkEmailExists - user found:`, user ? user.id : null);
   return !!user;
 };
 

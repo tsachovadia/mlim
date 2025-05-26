@@ -1,0 +1,184 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# PROJECT GUIDELINES
+
+## 🧪 MANDATORY: Test-Driven Development (TDD)
+
+**ALL development work MUST follow TDD methodology** - see [tdd-methodology.md](mdc:.roo/rules/tdd-methodology.md) for complete guidelines.
+
+### **TDD Red-Green-Refactor Cycle Required:**
+1. **RED**: Write failing tests first - `git commit -m "test: add failing tests for X"`
+2. **GREEN**: Minimal code to pass tests - `git commit -m "feat: implement X"`  
+3. **REFACTOR**: Improve code quality - `git commit -m "refactor: optimize X"`
+
+### **No Production Code Without Tests:**
+- ❌ **NEVER** write implementation before tests
+- ✅ **ALWAYS** start with comprehensive failing tests
+- ✅ **COMMIT** after each TDD phase
+- ✅ **VERIFY** tests actually fail initially
+
+## 🔄 Enhanced Git Workflow Requirements
+
+### **Frequent Commit Strategy** 
+- **Every TDD Phase**: Commit after RED, GREEN, and REFACTOR phases
+- **Every Test File**: Immediate commit when creating new test files
+- **Every Bug Fix**: Commit test that reproduces bug, then commit fix
+- **Every Feature**: Multiple commits throughout TDD cycle
+- **Every Refactor**: Commit improvements while keeping tests green
+
+### **Commit Message Conventions**
+```bash
+# TDD-focused commit messages
+test: add comprehensive API tests for institution search_files
+feat: implement institution search_files with pagination  
+fix: resolve SQLite compatibility issues in search_files
+refactor: extract common validation patterns
+docs: update API documentation for search_files endpoints
+```
+
+### **Commit Frequency Goals**
+- ✅ **Multiple commits per hour** during active development
+- ✅ **Small, focused commits** (single responsibility)
+- ✅ **Clear progression** showing TDD methodology
+- ✅ **Working code** at every commit (GREEN state)
+
+### **Before ANY Commit - Quality Gates**
+- [ ] All tests passing ✅
+- [ ] TypeScript compilation clean ✅
+- [ ] No console errors ✅
+- [ ] Hebrew text requirements met ✅
+- [ ] TDD cycle phase completed ✅
+
+## 🇮🇱 Hebrew Language Requirements
+
+### User-Facing Text
+- **ALL user-visible text must be in Hebrew**
+- **Page titles, headings, buttons, form labels**: Hebrew only
+- **Error messages, success messages, notifications**: Hebrew only
+- **Navigation menus, tooltips, help text**: Hebrew only
+- **Landing page content, onboarding steps**: Hebrew only
+
+### RTL Layout Support
+- **Direction**: `dir="rtl"` on HTML root elements
+- **Text Alignment**: Default right-aligned for Hebrew text
+- **Layout Mirroring**: Icons, buttons, and navigation elements mirrored for RTL
+- **Tailwind RTL**: Use `rtl:` prefix for RTL-specific styles
+
+### What Stays in English
+- ✅ **Code**: Variables, functions, classes, APIs
+- ✅ **Comments**: All code comments and documentation
+- ✅ **File Names**: All files and directories
+- ✅ **Git Messages**: Commit messages and branch names
+- ✅ **Technical Documentation**: Architecture docs, README files
+- ✅ **Database**: Table names, column names, constraints
+- ✅ **Tests**: Test descriptions and test code
+
+## 📝 Implementation Examples
+
+### Hebrew Text in Components
+```jsx
+// ✅ DO: Hebrew user-facing text
+<button className="bg-blue-600 text-white">
+  התחל את המסע שלך ←
+</button>
+
+<h1 className="text-4xl font-bold">
+  מצא את המסלול האקדמי המושלם
+</h1>
+
+// ❌ DON'T: English user-facing text
+<button className="bg-blue-600 text-white">
+  Start Your Journey →
+</button>
+```
+
+### RTL Layout Support
+```jsx
+// ✅ DO: RTL-aware layout
+<div className="text-right rtl:text-right ltr:text-left">
+  <h2 className="text-2xl mb-4">כותרת בעברית</h2>
+  <p className="text-gray-600">תוכן בעברית עם יישור נכון</p>
+</div>
+
+// ✅ DO: Mirrored icons for RTL
+<ArrowLeftIcon className="w-5 h-5 rtl:rotate-180" />
+```
+
+### Form Labels and Validation
+```jsx
+// ✅ DO: Hebrew form elements
+<label htmlFor="psychometric" className="block text-sm font-medium text-gray-700">
+  ציון פסיכומטרי
+</label>
+<input
+  type="number"
+  id="psychometric"
+  placeholder="הכנס ציון (200-800)"
+  className="w-full px-4 py-2 border rounded-lg"
+/>
+
+// Error messages in Hebrew
+{errors.psychometric && (
+  <p className="text-red-500 text-sm mt-1">
+    נא להכניס ציון פסיכומטרי תקין
+  </p>
+)}
+```
+
+## 🎨 Style Guide Updates for Hebrew
+
+### Typography
+- **Primary Font**: `'Heebo', 'Assistant', 'Rubik', system-ui, sans-serif` for Hebrew
+- **English Fallback**: `Inter, system-ui, sans-serif` for technical text
+- **Line Height**: Increased for Hebrew text readability (`leading-relaxed`)
+
+### Spacing for Hebrew
+- **Letter Spacing**: Standard for Hebrew (no extra spacing)
+- **Word Spacing**: Default browser spacing for Hebrew
+- **Paragraph Spacing**: Extra spacing between Hebrew paragraphs
+
+### Component Modifications
+- **Buttons**: Text alignment and padding adjusted for Hebrew
+- **Cards**: Header alignment and content flow for RTL
+- **Forms**: Label placement and validation message positioning
+
+## 📋 TDD-Enhanced Commit Workflow
+
+1. **Start TDD Cycle**: Write failing tests first
+2. **RED Commit**: `git add tests/ && git commit -m "test: add failing tests for X"`
+3. **Implement Minimal Code**: Make tests pass
+4. **GREEN Commit**: `git add . && git commit -m "feat: implement X"`
+5. **Refactor** (if needed): Improve code while keeping tests green
+6. **REFACTOR Commit**: `git add . && git commit -m "refactor: optimize X"`
+7. **Push** (if remote configured): `git push origin main`
+
+## 🔍 Enhanced Quality Checklist
+
+Before any commit, verify:
+- [ ] **TDD cycle completed** (RED-GREEN-REFACTOR)
+- [ ] **All tests passing** ✅
+- [ ] **Test coverage maintained** ✅
+- [ ] All user-facing text is in Hebrew
+- [ ] RTL layout works correctly
+- [ ] Hebrew fonts load properly
+- [ ] No English text visible to users
+- [ ] Code and comments remain in English
+- [ ] File names and structure in English
+- [ ] TypeScript compilation clean
+- [ ] No console errors
+
+## 🎯 Success Metrics
+
+### **Development Quality Indicators:**
+- ✅ **Frequent commits** (multiple per hour during active development)
+- ✅ **Clear TDD progression** in git history
+- ✅ **Fast test suite** (< 30 seconds)
+- ✅ **High test coverage** (>90% for critical paths)
+- ✅ **Working software** at every commit
+- ✅ **Confident refactoring** enabled by comprehensive tests
+
+---
+*TDD methodology and frequent commits are mandatory for all development work. See [tdd-methodology.md](mdc:.roo/rules/tdd-methodology.md) for detailed guidelines.*

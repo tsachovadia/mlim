@@ -105,4 +105,70 @@ export const sanitizeUserInput = (data: any): any => {
   if (sanitized.phone) sanitized.phone = sanitized.phone.trim();
   
   return sanitized;
+};
+
+// Academic Profile validation interfaces and functions
+export interface AcademicProfileValidation {
+  isValid: boolean;
+  errors: string[];
+}
+
+export interface BagrutSubjectValidation {
+  isValid: boolean;
+  errors: string[];
+}
+
+export const validateAcademicProfileData = (data: any): AcademicProfileValidation => {
+  const errors = [];
+
+  // Validate psychometric score
+  if (data.psychometricScore !== undefined) {
+    if (typeof data.psychometricScore !== 'number' || 
+        data.psychometricScore < 200 || 
+        data.psychometricScore > 800) {
+      errors.push('Psychometric score must be between 200 and 800');
+    }
+  }
+
+  // Validate bagrut average
+  if (data.bagrutAverage !== undefined) {
+    if (typeof data.bagrutAverage !== 'number' || 
+        data.bagrutAverage < 0 || 
+        data.bagrutAverage > 100) {
+      errors.push('Bagrut average must be between 0 and 100');
+    }
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+};
+
+export const validateBagrutSubjectData = (data: any): BagrutSubjectValidation => {
+  const errors = [];
+
+  // Validate score
+  if (data.score !== undefined) {
+    if (typeof data.score !== 'number' || data.score < 0 || data.score > 100) {
+      errors.push('Subject score must be between 0 and 100');
+    }
+  }
+
+  // Validate units
+  if (data.units !== undefined) {
+    if (typeof data.units !== 'number' || data.units < 1 || data.units > 5) {
+      errors.push('Units must be between 1 and 5');
+    }
+  }
+
+  // Validate subject name
+  if (!data.subjectName || typeof data.subjectName !== 'string') {
+    errors.push('Subject name is required');
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
 }; 
